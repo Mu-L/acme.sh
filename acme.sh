@@ -6884,6 +6884,16 @@ _getARICertID() {
   _debug2 "_aki" "$_aki"
   _debug2 "_ser" "$_ser"
 
+  # RFC 9773 Section 4.1 requires the DER-encoded INTEGER value bytes of
+  # serialNumber. When the high bit of the first byte is set (>= 0x80) DER
+  # prepends a 0x00 sign byte to keep the integer positive; openssl's hex
+  # output strips that, so add it back. Boulder (LE) accepts either form,
+  # but Sectigo (ZeroSSL) is strict and rejects newOrder with HTTP 401
+  # "replaces field does not identify a certificate" if the byte is missing.
+  case "$_ser" in
+    [89aAbBcCdDeEfF]*) _ser="00$_ser" ;;
+  esac
+
   _akiurl="$(echo "$_aki" | _h2b | _base64 | _url_replace)"
   _debug2 "_akiurl" "$_akiurl"
   _serurl="$(echo "$_ser" | _h2b | _base64 | _url_replace)"
